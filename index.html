@@ -39,6 +39,7 @@ const GROUP_COLOR = { Alcance: "rgba(19,21,48,0.38)", Volumen: C.ink, Engagement
 /* ============================== KPI CATALOGUE ============================== */
 const KPIS = [
   { id: "locales", label: "Locales activos", group: "Alcance", unit: "count", agg: "sum_all" },
+  { id: "pctCobertura", label: "% cobertura locales", group: "Alcance", unit: "pct", agg: "ratio", computed: true },
   { id: "registros", label: "Registros total", group: "Volumen", unit: "count", agg: "sum" },
   { id: "clientes", label: "Clientes total", group: "Volumen", unit: "count", agg: "sum" },
   { id: "registrosPorLocal", label: "Registros x local", group: "Volumen", unit: "count", agg: "ratio" },
@@ -47,9 +48,10 @@ const KPIS = [
   { id: "frecRec", label: "Frecuencia (recurrentes)", group: "Engagement", unit: "ratio", agg: "ratio" },
   { id: "pctBienvenida", label: "% Uso de bienvenida", group: "Engagement", unit: "pct", agg: "ratio" },
   { id: "pctRecurrentes", label: "% Recurrentes", group: "Engagement", unit: "pct", agg: "ratio" },
-  { id: "pctNivel1", label: "% sobre nivel 1 (rec.)", group: "Engagement", unit: "pct", agg: "ratio" },
+  { id: "pctNivel1", label: "% clientes en niveles superiores", group: "Engagement", unit: "pct", agg: "ratio" },
   { id: "campAuto", label: "Campañas automatizadas ON", group: "Campañas", unit: "count", agg: "sum" },
   { id: "campManual", label: "Campañas manuales enviadas", group: "Campañas", unit: "count", agg: "sum" },
+  { id: "appInstalada", label: "Usuarios con app instalada", group: "Alcance", unit: "count", agg: "sum" },
   { id: "usuariosBase", label: "Usuarios total base", group: "Alcance", unit: "count", agg: "sum" },
 ];
 const KPI_MAP = Object.fromEntries(KPIS.map((k) => [k.id, k]));
@@ -59,6 +61,7 @@ const BRANDS = [
   { id: "cdm", name: "CDM" }, { id: "lpq", name: "LPQ" }, { id: "ronnie", name: "RONNIE" },
   { id: "tantesara", name: "Tante Sara" }, { id: "jb", name: "JB" }, { id: "paru", name: "Páru" },
   { id: "vicolo", name: "Vícolo" },
+  { id: "signoramariola", name: "Signora Mariola" },
 ];
 const BRAND_COLOR = Object.fromEntries(BRANDS.map((b, i) => [b.id, BRAND_PALETTE[i % BRAND_PALETTE.length]]));
 
@@ -66,40 +69,43 @@ const BRAND_COLOR = Object.fromEntries(BRANDS.map((b, i) => [b.id, BRAND_PALETTE
 /* Para actualizar: volvé al chat de Claude con el CSV del nuevo mes, pedí que regenere este archivo, y subí el HTML actualizado a GitHub. Así todos ven siempre lo mismo. */
 const MONTHS = {
   "2026-04": { label: "Abril 2026", data: {
-    teaarg: { hasData: true, locales: 17, registros: 23893, clientes: 14272, registrosPorLocal: 1405, clientesPorLocal: 839, frecTodos: 1.67, frecRec: 2.08, pctBienvenida: 22, pctRecurrentes: 55, pctNivel1: 25.5, campAuto: 4, campManual: 9, usuariosBase: 169000 },
-    teauy: { hasData: true, locales: 1, registros: 175, clientes: 121, registrosPorLocal: 175, clientesPorLocal: 121, frecTodos: 1.45, frecRec: 1.75, pctBienvenida: 28, pctRecurrentes: 50, pctNivel1: 44, campAuto: 2, campManual: 0, usuariosBase: 3375 },
-    ge: { hasData: true, locales: 11, registros: 26778, clientes: 13672, registrosPorLocal: 2434, clientesPorLocal: 1242, frecTodos: 1.96, frecRec: 2.23, pctBienvenida: 7, pctRecurrentes: 72, pctNivel1: 51, campAuto: 2, campManual: 5, usuariosBase: 202370 },
-    cdm: { hasData: true, locales: 49, registros: 16777, clientes: 15107, registrosPorLocal: 342, clientesPorLocal: 308, frecTodos: 1.11, frecRec: 1.61, pctBienvenida: 67, pctRecurrentes: 10, pctNivel1: 39, campAuto: 3, campManual: 6, usuariosBase: 78261 },
-    lpq: { hasData: true, locales: 13, registros: 1590, clientes: 596, registrosPorLocal: 122, clientesPorLocal: 45, frecTodos: 2.67, frecRec: 3.67, pctBienvenida: 12, pctRecurrentes: 48, pctNivel1: 58, campAuto: 2, campManual: 1, usuariosBase: 3621 },
-    ronnie: { hasData: true, locales: 4, registros: 211, clientes: 204, registrosPorLocal: 52, clientesPorLocal: 51, frecTodos: 1.03, frecRec: 1.03, pctBienvenida: 60, pctRecurrentes: 0, pctNivel1: 0, campAuto: 2, campManual: 6, usuariosBase: 2069 },
-    tantesara: { hasData: false, locales: 4 },
-    jb: { hasData: false, locales: 1 },
-    paru: { hasData: false, locales: 1 },
-    vicolo: { hasData: false, locales: 0 },
+    teaarg: { hasData: true, locales: 17, localesSobreTotal: 17, registros: 23893, clientes: 14272, registrosPorLocal: 1405, clientesPorLocal: 839, frecTodos: 1.67, frecRec: 2.08, pctBienvenida: 22, pctRecurrentes: 55, pctNivel1: 25, campAuto: 4, campManual: 9, appInstalada: null, usuariosBase: 169000 },
+    teauy: { hasData: true, locales: 1, localesSobreTotal: 1, registros: 175, clientes: 121, registrosPorLocal: 175, clientesPorLocal: 121, frecTodos: 1.45, frecRec: 1.75, pctBienvenida: 28, pctRecurrentes: 50, pctNivel1: 27, campAuto: 2, campManual: 0, appInstalada: null, usuariosBase: 3375 },
+    ge: { hasData: true, locales: 11, localesSobreTotal: 11, registros: 26778, clientes: 13672, registrosPorLocal: 2434, clientesPorLocal: 1242, frecTodos: 1.96, frecRec: 2.23, pctBienvenida: 7, pctRecurrentes: 72, pctNivel1: 38, campAuto: 2, campManual: 5, appInstalada: null, usuariosBase: 202370 },
+    cdm: { hasData: true, locales: 49, localesSobreTotal: 49, registros: 16777, clientes: 15107, registrosPorLocal: 342, clientesPorLocal: 308, frecTodos: 1.11, frecRec: 1.61, pctBienvenida: 67, pctRecurrentes: 10, pctNivel1: 5, campAuto: 3, campManual: 6, appInstalada: null, usuariosBase: 78261 },
+    lpq: { hasData: true, locales: 13, localesSobreTotal: 32, registros: 1590, clientes: 596, registrosPorLocal: 122, clientesPorLocal: 45, frecTodos: 2.67, frecRec: 3.67, pctBienvenida: 12, pctRecurrentes: 48, pctNivel1: 35, campAuto: 2, campManual: 1, appInstalada: null, usuariosBase: 3621 },
+    ronnie: { hasData: true, locales: 4, localesSobreTotal: 4, registros: 211, clientes: 204, registrosPorLocal: 52, clientesPorLocal: 51, frecTodos: 1.03, frecRec: 1.03, pctBienvenida: 60, pctRecurrentes: 0, pctNivel1: 0.5, campAuto: 2, campManual: 6, appInstalada: null, usuariosBase: 2069 },
+    tantesara: { hasData: false, locales: 4, localesSobreTotal: 4 },
+    jb: { hasData: false, locales: 1, localesSobreTotal: 1 },
+    paru: { hasData: false, locales: 1, localesSobreTotal: 5 },
+    vicolo: { hasData: false, locales: 0, localesSobreTotal: 0 },
+    signoramariola: { hasData: false, locales: 0, localesSobreTotal: 0 },
   }},
   "2026-05": { label: "Mayo 2026", data: {
-    teaarg: { hasData: true, locales: 17, registros: 24268, clientes: 13788, registrosPorLocal: 1427, clientesPorLocal: 811, frecTodos: 1.76, frecRec: 2.13, pctBienvenida: 18, pctRecurrentes: 61, pctNivel1: 43, campAuto: 4, campManual: 11, usuariosBase: 169000 },
-    teauy: { hasData: true, locales: 1, registros: 201, clientes: 127, registrosPorLocal: 201, clientesPorLocal: 127, frecTodos: 1.58, frecRec: 2.09, pctBienvenida: 29, pctRecurrentes: 54, pctNivel1: 45, campAuto: 2, campManual: 0, usuariosBase: 3375 },
-    ge: { hasData: true, locales: 11, registros: 26222, clientes: 13126, registrosPorLocal: 2383, clientesPorLocal: 1193, frecTodos: 2, frecRec: 2.22, pctBienvenida: 6, pctRecurrentes: 76, pctNivel1: 52, campAuto: 2, campManual: 11, usuariosBase: 202370 },
-    cdm: { hasData: true, locales: 45, registros: 19225, clientes: 17020, registrosPorLocal: 392, clientesPorLocal: 347, frecTodos: 1.13, frecRec: 1.51, pctBienvenida: 60, pctRecurrentes: 13, pctNivel1: 45, campAuto: 3, campManual: 10, usuariosBase: 78261 },
-    lpq: { hasData: true, locales: 13, registros: 2240, clientes: 1034, registrosPorLocal: 203, clientesPorLocal: 94, frecTodos: 2.17, frecRec: 3.72, pctBienvenida: 23, pctRecurrentes: 67, pctNivel1: 64, campAuto: 2, campManual: 0, usuariosBase: 3621 },
-    ronnie: { hasData: true, locales: 4, registros: 748, clientes: 719, registrosPorLocal: 187, clientesPorLocal: 179, frecTodos: 1.04, frecRec: 1.3, pctBienvenida: 53, pctRecurrentes: 2, pctNivel1: 9, campAuto: 2, campManual: 4, usuariosBase: 2069 },
-    tantesara: { hasData: false, locales: 4 },
-    jb: { hasData: false, locales: 1 },
-    paru: { hasData: false, locales: 1 },
-    vicolo: { hasData: false, locales: 0 },
+    teaarg: { hasData: true, locales: 17, localesSobreTotal: 17, registros: 24268, clientes: 13788, registrosPorLocal: 1427, clientesPorLocal: 811, frecTodos: 1.76, frecRec: 2.13, pctBienvenida: 18, pctRecurrentes: 61, pctNivel1: 28, campAuto: 4, campManual: 11, appInstalada: null, usuariosBase: 169000 },
+    teauy: { hasData: true, locales: 1, localesSobreTotal: 1, registros: 201, clientes: 127, registrosPorLocal: 201, clientesPorLocal: 127, frecTodos: 1.58, frecRec: 2.09, pctBienvenida: 29, pctRecurrentes: 54, pctNivel1: 24, campAuto: 2, campManual: 0, appInstalada: null, usuariosBase: 3375 },
+    ge: { hasData: true, locales: 11, localesSobreTotal: 11, registros: 26222, clientes: 13126, registrosPorLocal: 2383, clientesPorLocal: 1193, frecTodos: 2, frecRec: 2.22, pctBienvenida: 6, pctRecurrentes: 76, pctNivel1: 40, campAuto: 2, campManual: 11, appInstalada: null, usuariosBase: 202370 },
+    cdm: { hasData: true, locales: 45, localesSobreTotal: 45, registros: 19225, clientes: 17020, registrosPorLocal: 392, clientesPorLocal: 347, frecTodos: 1.13, frecRec: 1.51, pctBienvenida: 60, pctRecurrentes: 13, pctNivel1: 8, campAuto: 3, campManual: 10, appInstalada: null, usuariosBase: 78261 },
+    lpq: { hasData: true, locales: 13, localesSobreTotal: 32, registros: 2240, clientes: 1034, registrosPorLocal: 203, clientesPorLocal: 94, frecTodos: 2.17, frecRec: 3.72, pctBienvenida: 23, pctRecurrentes: 67, pctNivel1: 25, campAuto: 2, campManual: 0, appInstalada: null, usuariosBase: 3621 },
+    ronnie: { hasData: true, locales: 4, localesSobreTotal: 4, registros: 748, clientes: 719, registrosPorLocal: 187, clientesPorLocal: 179, frecTodos: 1.04, frecRec: 1.3, pctBienvenida: 53, pctRecurrentes: 2, pctNivel1: 0.5, campAuto: 2, campManual: 4, appInstalada: null, usuariosBase: 2069 },
+    tantesara: { hasData: false, locales: 4, localesSobreTotal: 4 },
+    jb: { hasData: false, locales: 1, localesSobreTotal: 1 },
+    paru: { hasData: false, locales: 1, localesSobreTotal: 5 },
+    vicolo: { hasData: false, locales: 0, localesSobreTotal: 0 },
+    signoramariola: { hasData: false, locales: 0, localesSobreTotal: 0 },
   }},
   "2026-06": { label: "Junio 2026", data: {
-    teaarg: { hasData: true, locales: 17, registros: 22901, clientes: 12941, registrosPorLocal: 1347, clientesPorLocal: 761, frecTodos: 1.77, frecRec: 2.09, pctBienvenida: 17, pctRecurrentes: 63, pctNivel1: 44, campAuto: 5, campManual: 13, usuariosBase: 170926 },
-    teauy: { hasData: true, locales: 1, registros: 38, clientes: 32, registrosPorLocal: 38, clientesPorLocal: 32, frecTodos: 1.19, frecRec: 1.22, pctBienvenida: 29, pctRecurrentes: 56, pctNivel1: 67, campAuto: 2, campManual: 0, usuariosBase: 3382 },
-    ge: { hasData: true, locales: 11, registros: 28661, clientes: 13989, registrosPorLocal: 2606, clientesPorLocal: 1272, frecTodos: 2.05, frecRec: 2.31, pctBienvenida: 6, pctRecurrentes: 75, pctNivel1: 53, campAuto: 2, campManual: 7, usuariosBase: 203899 },
-    cdm: { hasData: true, locales: 44, registros: 27374, clientes: 17915, registrosPorLocal: 622, clientesPorLocal: 407, frecTodos: 1.53, frecRec: 2.23, pctBienvenida: 41, pctRecurrentes: 17, pctNivel1: 52, campAuto: 3, campManual: 8, usuariosBase: 83783 },
-    lpq: { hasData: true, locales: 25, registros: 4520, clientes: 2661, registrosPorLocal: 109, clientesPorLocal: 70, frecTodos: 1.7, frecRec: 3.4, pctBienvenida: 39, pctRecurrentes: 19, pctNivel1: 61, campAuto: 2, campManual: 9, usuariosBase: 5111 },
-    ronnie: { hasData: true, locales: 4, registros: 594, clientes: 561, registrosPorLocal: 149, clientesPorLocal: 140, frecTodos: 1.06, frecRec: 1.32, pctBienvenida: 54, pctRecurrentes: 6, pctNivel1: 14, campAuto: 2, campManual: 5, usuariosBase: 2281 },
-    tantesara: { hasData: false, locales: 4 },
-    jb: { hasData: false, locales: 1 },
-    paru: { hasData: false, locales: 1 },
-    vicolo: { hasData: false, locales: 1 },
+    teaarg: { hasData: true, locales: 17, localesSobreTotal: 17, registros: 22901, clientes: 12941, registrosPorLocal: 1347, clientesPorLocal: 761, frecTodos: 1.77, frecRec: 2.09, pctBienvenida: 17, pctRecurrentes: 63, pctNivel1: 30, campAuto: 5, campManual: 13, appInstalada: 33700, usuariosBase: 170926 },
+    teauy: { hasData: true, locales: 1, localesSobreTotal: 1, registros: 38, clientes: 32, registrosPorLocal: 38, clientesPorLocal: 32, frecTodos: 1.19, frecRec: 1.22, pctBienvenida: 29, pctRecurrentes: 56, pctNivel1: 38, campAuto: 2, campManual: 0, appInstalada: 478, usuariosBase: 3382 },
+    ge: { hasData: true, locales: 11, localesSobreTotal: 11, registros: 28661, clientes: 13989, registrosPorLocal: 2606, clientesPorLocal: 1272, frecTodos: 2.05, frecRec: 2.31, pctBienvenida: 6, pctRecurrentes: 75, pctNivel1: 40, campAuto: 2, campManual: 7, appInstalada: 29300, usuariosBase: 203899 },
+    cdm: { hasData: true, locales: 44, localesSobreTotal: 44, registros: 27374, clientes: 17915, registrosPorLocal: 622, clientesPorLocal: 407, frecTodos: 1.53, frecRec: 2.23, pctBienvenida: 41, pctRecurrentes: 17, pctNivel1: 15, campAuto: 3, campManual: 8, appInstalada: 43800, usuariosBase: 83783 },
+    lpq: { hasData: true, locales: 25, localesSobreTotal: 32, registros: 4520, clientes: 2661, registrosPorLocal: 109, clientesPorLocal: 70, frecTodos: 1.7, frecRec: 3.4, pctBienvenida: 39, pctRecurrentes: 19, pctNivel1: 15, campAuto: 2, campManual: 9, appInstalada: 1880, usuariosBase: 5111 },
+    ronnie: { hasData: true, locales: 4, localesSobreTotal: 4, registros: 594, clientes: 561, registrosPorLocal: 149, clientesPorLocal: 140, frecTodos: 1.06, frecRec: 1.32, pctBienvenida: 54, pctRecurrentes: 6, pctNivel1: 2, campAuto: 2, campManual: 5, appInstalada: 877, usuariosBase: 2281 },
+    tantesara: { hasData: false, locales: 4, localesSobreTotal: 4 },
+    jb: { hasData: false, locales: 1, localesSobreTotal: 1 },
+    paru: { hasData: false, locales: 1, localesSobreTotal: 5 },
+    vicolo: { hasData: false, locales: 1, localesSobreTotal: 1 },
+    signoramariola: { hasData: true, locales: 4, localesSobreTotal: 4, registros: 704, clientes: 225, registrosPorLocal: 176, clientesPorLocal: 56, frecTodos: 3.13, frecRec: 3.13, pctBienvenida: 25, pctRecurrentes: 0, pctNivel1: 5, campAuto: 2, campManual: 5, appInstalada: 250, usuariosBase: 310 },
   }},
 };
 const DATASET = { months: MONTHS };
@@ -111,13 +117,19 @@ function monthLabel(mes) {
 
 /* ============================== HELPERS ============================== */
 function isSumKpi(kpiId) { return ["sum_all", "sum"].includes(KPI_MAP[kpiId].agg); }
+function getVal(bd, kpiId) {
+  if (kpiId === "pctCobertura") {
+    return bd?.locales && bd?.localesSobreTotal ? (bd.locales / bd.localesSobreTotal) * 100 : null;
+  }
+  return bd?.hasData ? bd[kpiId] : kpiId === "locales" ? bd?.locales : null;
+}
 function aggregate(monthData, kpiId) {
   const kpi = KPI_MAP[kpiId];
   if (kpi.agg === "sum_all") return BRANDS.reduce((s, b) => s + (monthData[b.id]?.locales || 0), 0);
   const valid = BRANDS.map((b) => monthData[b.id]).filter((b) => b?.hasData);
   if (valid.length === 0) return null;
   if (kpi.agg === "sum") return valid.reduce((s, b) => s + (b[kpiId] || 0), 0);
-  const vals = valid.map((b) => b[kpiId]).filter((v) => v !== null && v !== undefined && !isNaN(v));
+  const vals = valid.map((b) => getVal(b, kpiId)).filter((v) => v !== null && v !== undefined && !isNaN(v));
   if (!vals.length) return null;
   return vals.reduce((s, v) => s + v, 0) / vals.length;
 }
@@ -427,8 +439,18 @@ function App() {
                         <tr key={b.id} style={{ background: i % 2 === 0 ? C.card : "transparent" }}>
                           <td className="sticky left-0 px-4 py-2.5 font-semibold" style={{ background: i % 2 === 0 ? C.card : C.cream }}><span className="inline-flex items-center gap-2"><Dot color={BRAND_COLOR[b.id]} />{b.name}</span></td>
                           {KPIS.map((k) => {
-                            const val = bd?.hasData ? bd[k.id] : k.id === "locales" ? bd?.locales : null;
-                            const prevVal = pbd?.hasData ? pbd[k.id] : k.id === "locales" ? pbd?.locales : null;
+                            let val;
+                            if (k.id === "pctCobertura") {
+                              val = bd?.locales && bd?.localesSobreTotal ? (bd.locales / bd.localesSobreTotal) * 100 : null;
+                            } else {
+                              val = bd?.hasData ? bd[k.id] : k.id === "locales" ? bd?.locales : null;
+                            }
+                            let prevVal;
+                            if (k.id === "pctCobertura") {
+                              prevVal = pbd?.locales && pbd?.localesSobreTotal ? (pbd.locales / pbd.localesSobreTotal) * 100 : null;
+                            } else {
+                              prevVal = pbd?.hasData ? pbd[k.id] : k.id === "locales" ? pbd?.locales : null;
+                            }
                             return (
                               <td key={k.id} className="px-3 py-2.5 text-right">
                                 <div className="flex flex-col items-end">
